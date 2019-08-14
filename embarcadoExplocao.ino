@@ -3,6 +3,8 @@
 #include <ArduinoJson.h>
 
 #define TIMEOUT 1000
+#define MILLS_AMBIENTE 3
+#define MILLS_WEBSERVICE 45
 
 /* PINOS (FAIXA-OPERACAO)[INTERVALO]
    A5 = TEMPERATURA (0 - 800)[0 - 1023]
@@ -21,13 +23,11 @@ float atualOxi = 0;
 float atualIg = 0;
 
 long antAmbienteMillis = 0;
-const long ambienteMillisInterval = 25;
 long antWebServiceMillis = 0;
-const long webServiceMillisInterval = 30;
 
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-// IPAddress ip(192, 168, 15, 177);
-IPAddress ip(127, 0, 0, 1);
+IPAddress ip(192, 168, 15, 77);
+//IPAddress ip(127, 0, 0, 1);
 EthernetServer server(80);
 
 void printSerialAmbiente()
@@ -97,14 +97,14 @@ void setJsonAmbiente(EthernetClient client, StaticJsonDocument<500> doc)
 }
 
 void printJsonAmbiente(EthernetClient client)
-{  
+{
   StaticJsonDocument<500> doc;
   client.println(F("HTTP/1.0 200 OK"));
   client.println(F("Content-Type: application/json"));
   client.println(F("Connection: close"));
-  client.print(F("Content-Length: "));  
-  setJsonAmbiente(client, doc);
+  client.print(F("Content-Length: "));
   client.println(measureJsonPretty(doc));
+  setJsonAmbiente(client, doc);
   client.println();
 }
 
@@ -130,7 +130,6 @@ void webService()
   EthernetClient client = server.available();
   if (client)
   {
-    StaticJsonDocument<500> doc;
     client.setConnectionTimeout(TIMEOUT); // set the timeout duration for client.connect() and client.stop()
     Serial.println("new client");
     // an http request ends with a blank line
@@ -164,7 +163,7 @@ void webService()
       }
     }
     // give the web browser time to receive the data
-    delay(1);
+    delay(3);
     // close the connection:
     client.stop();
     Serial.println("client disconnected");
@@ -174,12 +173,12 @@ void webService()
 void setup()
 {
   // put your setup code here, to run once:
-  Serial.begin(57600);
+  Serial.begin(250000);
   // You can use Ethernet.init(pin) to configure the CS pin
   //Ethernet.init(10);  // Most Arduino shields
 
   while (!Serial)
-    ;
+    continue;
   Serial.println("=====================================================================");
   Serial.println("Ethernet WebServer Example");
 
@@ -191,7 +190,7 @@ void setup()
   {
     Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
     while (true)
-      ;
+      continue;
   }
   else if (Ethernet.linkStatus() == LinkOFF)
   {
@@ -210,19 +209,30 @@ void setup()
 
 void loop()
 {
+  // webService();
   // put your main code here, to run repeatedly:
-  unsigned long currentMillisWebService = millis();
-  if (currentMillisWebService - antWebServiceMillis > webServiceMillisInterval)
-  {
-    antWebServiceMillis = currentMillisWebService;
+  // unsigned long currentMillisWebService = millis();
+  // if (currentMillisWebService - antWebServiceMillis > MILLS_WEBSERVICE)
+  // {
+  //   antWebServiceMillis = currentMillisWebService;
     webService();
-  }
+  // }
 
   unsigned long currentMillisAmbiente = millis();
-  if (currentMillisAmbiente - antAmbienteMillis > ambienteMillisInterval)
+  if (currentMillisAmbiente - antAmbienteMillis > MILLS_AMBIENTE)
   {
     antAmbienteMillis = currentMillisAmbiente;
     setAmbienteSimulado();
     // printSerialAmbiente();
   }
+  //
+  //  unsigned long currentMillisAmbiente = millis();
+  //  if (currentMillisAmbiente - antAmbienteMillis > MILLS_AMBIENTE)
+  //  {
+  //    antAmbienteMillis = currentMillisAmbiente;
+  //    setAmbienteSimulado();
+  //    // printSerialAmbiente();
+  //
+  //    webService();
+  //  }
 }
