@@ -22,16 +22,194 @@ float atualPoeira = 0;
 float atualOxi = 0;
 float atualIg = 0;
 
+float pressaoV = 1;
+float temperaturaV = 1;
+float conceoxiV = 1;
+float fonteV = 1;
+float umidadeV = 1;
+float concepoV = 1;
+
+int situTemperatura = 0;
+int situFonte = 0;
+int situPressao = 0;
+int situOxi = 0;
+int situPo = 0;
+int situUmidade = 0;
+int situSilo = 0;
+
 long antAmbienteMillis = 0;
 long antWebServiceMillis = 0;
 
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-IPAddress ip(192, 168, 1, 177);
+IPAddress ip(192, 168, 0, 177);
 IPAddress myDns(8, 8, 8, 8);
-IPAddress gateway(192, 168, 1, 1);
+IPAddress gateway(192, 168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
 EthernetServer server(80);
 
+void defParametros(String tipoGrao)
+{
+  if (tipoGrao == "Açúcar em pó")
+  {
+    pressaoV = 7.7;
+    temperaturaV = 370;
+    conceoxiV = 21;
+    fonteV = 0.03;
+    umidadeV = 100;
+    concepoV = 45;
+  }
+
+  else if (tipoGrao == "Alho desidratado")
+  {
+    pressaoV = 4;
+    temperaturaV = 360;
+    conceoxiV = 21;
+    fonteV = 0.24;
+    umidadeV = 100;
+    concepoV = 10;
+  }
+
+  else if (tipoGrao == "Arroz")
+  {
+    pressaoV = 3.3;
+    temperaturaV = 510;
+    conceoxiV = 21;
+    fonteV = 0.1;
+    umidadeV = 100;
+    concepoV = 85;
+  }
+
+  else if (tipoGrao == "Casca de arroz")
+  {
+    pressaoV = 7.7;
+    temperaturaV = 450;
+    conceoxiV = 17;
+    fonteV = 0.05;
+    umidadeV = 100;
+    concepoV = 55;
+  }
+
+  else if (tipoGrao == "Semente de arroz(casca)")
+  {
+    pressaoV = 4.3;
+    temperaturaV = 490;
+    conceoxiV = 12;
+    fonteV = 0.08;
+    umidadeV = 100;
+    concepoV = 45;
+  }
+
+  else if (tipoGrao == "Proteína de soja")
+  {
+    pressaoV = 6.9;
+    temperaturaV = 540;
+    conceoxiV = 12;
+    fonteV = 0.06;
+    umidadeV = 100;
+    concepoV = 40;
+  }
+
+  else if (tipoGrao == "Farinha de soja")
+  {
+    pressaoV = 6.6;
+    temperaturaV = 550;
+    conceoxiV = 15;
+    fonteV = 0.1;
+    umidadeV = 100;
+    concepoV = 60;
+  }
+
+  else if (tipoGrao == "Trigo bruto")
+  {
+    pressaoV = 5;
+    temperaturaV = 500;
+    conceoxiV = 12;
+    fonteV = 0.06;
+    umidadeV = 100;
+    concepoV = 0.5;
+  }
+
+  else if (tipoGrao == "Farinha de trigo")
+  {
+    pressaoV = 7;
+    temperaturaV = 440;
+    conceoxiV = 15;
+    fonteV = 0.06;
+    umidadeV = 100;
+    concepoV = 50;
+  }
+
+  else if (tipoGrao == "Trigo Cereal")
+  {
+    pressaoV = 9.2;
+    temperaturaV = 430;
+    conceoxiV = 13;
+    fonteV = 0.035;
+    umidadeV = 100;
+    concepoV = 35;
+  }
+
+  else if (tipoGrao == "Palha de trigo")
+  {
+    pressaoV = 8.2;
+    temperaturaV = 470;
+    conceoxiV = 13;
+    fonteV = 0.035;
+    umidadeV = 100;
+    concepoV = 75;
+  }
+
+  else if (tipoGrao == "Polvilho de trigo")
+  {
+    pressaoV = 7;
+    temperaturaV = 430;
+    conceoxiV = 12;
+    fonteV = 0.025;
+    umidadeV = 100;
+    concepoV = 45;
+  }
+
+  else if (tipoGrao == "Milho")
+  {
+    pressaoV = 8;
+    temperaturaV = 400;
+    conceoxiV = 13;
+    fonteV = 0.04;
+    umidadeV = 100;
+    concepoV = 55;
+  }
+
+  else if (tipoGrao == "Casca de milho cru")
+  {
+    pressaoV = 8.7;
+    temperaturaV = 410;
+    conceoxiV = 17;
+    fonteV = 0.04;
+    umidadeV = 100;
+    concepoV = 40;
+  }
+
+  else if (tipoGrao == "Polvilho de milho")
+  {
+    pressaoV = 10.2;
+    temperaturaV = 390;
+    conceoxiV = 11;
+    fonteV = 0.03;
+    umidadeV = 100;
+    concepoV = 40;
+  }
+
+  else if (tipoGrao == "Semente de milho")
+  {
+    pressaoV = 8.9;
+    temperaturaV = 450;
+    conceoxiV = 12;
+    fonteV = 0.045;
+    umidadeV = 100;
+    concepoV = 45;
+    concepoV = 40;
+  }
+}
 void printSerialAmbiente()
 {
   Serial.print("========\nTemperatura: ");
@@ -80,34 +258,43 @@ void printWebAmbiente(EthernetClient client)
   client.println("</html>");
 }
 
-void setJsonAmbiente(EthernetClient client, StaticJsonDocument<500> doc)
-{
-  JsonArray pressao = doc.createNestedArray("pressao");
-  pressao.add(atualPre);
-  JsonArray temperatura = doc.createNestedArray("temperatura");
-  temperatura.add(atualTemp);
-  JsonArray conceOxi = doc.createNestedArray("conceOxi");
-  conceOxi.add(atualOxi);
-  JsonArray fonteIg = doc.createNestedArray("fonteIg");
-  fonteIg.add(atualIg);
-  JsonArray umidade = doc.createNestedArray("umidade");
-  umidade.add(atualUmi);
-  JsonArray concePo = doc.createNestedArray("concePo");
-  concePo.add(atualPoeira);
-  serializeJson(doc, Serial);
-  serializeJson(doc, client);
-}
-
 void printJsonAmbiente(EthernetClient client)
 {
-  StaticJsonDocument<500> doc;
+  StaticJsonDocument<260> doc;
+  doc["pressao"] = atualPre;
+  doc["situPressao"] = situPressao;
+  doc["temperatura"] = atualTemp;
+  doc["situTemperatura"] = situTemperatura;
+  doc["conceOxi"] = atualOxi;
+  doc["situConceOxi"] = situOxi;
+  doc["fonteIg"] = atualIg;
+  doc["situFonteIg"] = situFonte;
+  doc["umidade"] = atualUmi;
+  doc["situUmidade"] = situUmidade;
+  doc["concePo"] = atualPoeira;
+  doc["situConcePo"] = situPo;
+  doc["situaSilo"] = situSilo;
   client.println(F("HTTP/1.0 200 OK"));
+  client.println(F("GET GET /api/ambiente/ HTTP/1.0"));
   client.println(F("Content-Type: application/json"));
+  // client.println("Refresh: 1");  // refresh the page automatically every 5 sec
   client.println(F("Connection: close"));
   client.print(F("Content-Length: "));
   client.println(measureJsonPretty(doc));
   client.println();
-  setJsonAmbiente(client, doc);
+  // serializeJsonPretty(doc, Serial);
+  serializeJson(doc, client);
+}
+
+void geraSitu()
+{
+  situTemperatura = (atualTemp / temperaturaV) * 100;
+  situFonte = atualIg / fonteV * 100;
+  situPressao = atualPre / pressaoV * 100;
+  situOxi = atualOxi / conceoxiV * 100;
+  situPo = atualPoeira / concepoV * 100;
+  situUmidade = atualUmi / umidadeV * 100;
+  situSilo = (situTemperatura + situFonte + situPressao + situOxi + situPo + situUmidade) / 6;
 }
 
 void setAmbienteSimulado()
@@ -125,6 +312,25 @@ void setAmbienteSimulado()
   atualPoeira = atualPoeira * 100 / 1023;
   atualOxi = map(atualOxi, 0, 409, 0, 100);
   atualIg = atualIg * 2 / 1023;
+
+  defParametros("Alho desidratado");
+  geraSitu();
+}
+
+void resourceWebServer(EthernetClient client, String req)
+{
+  if (req == "GET /api/ambiente/ HTTP/1.1")
+  {
+    printJsonAmbiente(client);
+  }
+  else if (req == "POST /api/ambiente/ HTTP/1.1")
+  {
+    printSerialAmbiente();
+  }
+  else
+  {
+    printWebAmbiente(client);
+  }
 }
 
 void webService()
@@ -133,36 +339,21 @@ void webService()
   if (client)
   {
     client.setConnectionTimeout(TIMEOUT); // set the timeout duration for client.connect() and client.stop()
-    Serial.println("new client");
+    Serial.println();
+    Serial.print("[HOST]: ");
+    Serial.println(client.remoteIP());
     // an http request ends with a blank line
     boolean currentLineIsBlank = true;
-    while (client.connected())
+    client.connected();
+    if (client.available())
     {
-      if (client.available())
-      {
-        char c = client.read();
-        Serial.write(c);
-        // if you've gotten to the end of the line (received a newline
-        // character) and the line is blank, the http request has ended,
-        // so you can send a reply
-        if (c == '\n' && currentLineIsBlank)
-        {
-          // send a standard http response header
-          // printWebAmbiente(client);
-          printJsonAmbiente(client);
-          break;
-        }
-        if (c == '\n')
-        {
-          // you're starting a new line
-          currentLineIsBlank = true;
-        }
-        else if (c != '\r')
-        {
-          // you've gotten a character on the current line
-          currentLineIsBlank = false;
-        }
-      }
+      String req = client.readStringUntil('\r');
+      Serial.print("[HTTP-REQUEST]: ");
+      Serial.println(req);
+      // client.flush();
+      // Serial.println(req);
+      // Serial.println(req2);
+      resourceWebServer(client, req);
     }
     // give the web browser time to receive the data
     delay(3);
@@ -225,6 +416,6 @@ void loop()
   {
     antAmbienteMillis = currentMillisAmbiente;
     setAmbienteSimulado();
-    // printSerialAmbiente();
+    //printSerialAmbiente();
   }
 }
