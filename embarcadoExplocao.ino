@@ -26,8 +26,10 @@ long antAmbienteMillis = 0;
 long antWebServiceMillis = 0;
 
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-IPAddress ip(192, 168, 15, 77);
-//IPAddress ip(127, 0, 0, 1);
+IPAddress ip(192, 168, 1, 177);
+IPAddress myDns(8, 8, 8, 8);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 255, 0);
 EthernetServer server(80);
 
 void printSerialAmbiente()
@@ -93,7 +95,7 @@ void setJsonAmbiente(EthernetClient client, StaticJsonDocument<500> doc)
   JsonArray concePo = doc.createNestedArray("concePo");
   concePo.add(atualPoeira);
   serializeJson(doc, Serial);
-  serializeJsonPretty(doc, client);
+  serializeJson(doc, client);
 }
 
 void printJsonAmbiente(EthernetClient client)
@@ -104,18 +106,18 @@ void printJsonAmbiente(EthernetClient client)
   client.println(F("Connection: close"));
   client.print(F("Content-Length: "));
   client.println(measureJsonPretty(doc));
-  setJsonAmbiente(client, doc);
   client.println();
+  setJsonAmbiente(client, doc);
 }
 
 void setAmbienteSimulado()
 {
-  atualTemp = analogRead(A0);
-  atualUmi = analogRead(A1);
-  atualPre = analogRead(A2);
-  atualPoeira = analogRead(A3);
-  atualOxi = analogRead(A4);
-  atualIg = analogRead(A5);
+  atualTemp = analogRead(A5);
+  atualUmi = analogRead(A4);
+  atualPre = analogRead(A3);
+  atualPoeira = analogRead(A2);
+  atualOxi = analogRead(A1);
+  atualIg = analogRead(A0);
 
   atualTemp = map(atualTemp, 0, 1023, 0, 800);
   atualUmi = map(atualUmi, 0, 409, 0, 100);
@@ -173,9 +175,9 @@ void webService()
 void setup()
 {
   // put your setup code here, to run once:
-  Serial.begin(250000);
+  Serial.begin(57600);
   // You can use Ethernet.init(pin) to configure the CS pin
-  //Ethernet.init(10);  // Most Arduino shields
+  Ethernet.init(10); // Most Arduino shields
 
   while (!Serial)
     continue;
@@ -211,12 +213,12 @@ void loop()
 {
   // webService();
   // put your main code here, to run repeatedly:
-  // unsigned long currentMillisWebService = millis();
-  // if (currentMillisWebService - antWebServiceMillis > MILLS_WEBSERVICE)
-  // {
-  //   antWebServiceMillis = currentMillisWebService;
+  unsigned long currentMillisWebService = millis();
+  if (currentMillisWebService - antWebServiceMillis > MILLS_WEBSERVICE)
+  {
+    antWebServiceMillis = currentMillisWebService;
     webService();
-  // }
+  }
 
   unsigned long currentMillisAmbiente = millis();
   if (currentMillisAmbiente - antAmbienteMillis > MILLS_AMBIENTE)
@@ -225,14 +227,4 @@ void loop()
     setAmbienteSimulado();
     // printSerialAmbiente();
   }
-  //
-  //  unsigned long currentMillisAmbiente = millis();
-  //  if (currentMillisAmbiente - antAmbienteMillis > MILLS_AMBIENTE)
-  //  {
-  //    antAmbienteMillis = currentMillisAmbiente;
-  //    setAmbienteSimulado();
-  //    // printSerialAmbiente();
-  //
-  //    webService();
-  //  }
 }
