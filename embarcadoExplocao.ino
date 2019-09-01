@@ -22,167 +22,13 @@ float atualPoeira = 0;
 float atualOxi = 0;
 float atualIg = 0;
 
-float pressaoV = 1;
-float temperaturaV = 1;
-float conceoxiV = 1;
-float fonteV = 1;
-float umidadeV = 1;
-float concepoV = 1;
-
 long antAmbienteMillis = 0;
 long antWebServiceMillis = 0;
 bool DHCP = false;
 
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-// IPAddress ip(192,168,16,177);
 EthernetServer server(3000);
 
-void defParametros(String tipoGrao) {
-  if (tipoGrao == "Açúcar em pó") {
-    pressaoV = 7.7;
-    temperaturaV = 370;
-    conceoxiV = 21;
-    fonteV = 0.03;
-    umidadeV = 100;
-    concepoV = 45;
-  }
-
-  else if (tipoGrao == "Alho desidratado") {
-    pressaoV = 4;
-    temperaturaV = 360;
-    conceoxiV = 21;
-    fonteV = 0.24;
-    umidadeV = 100;
-    concepoV = 10;
-  }
-
-  else if (tipoGrao == "Arroz") {
-    pressaoV = 3.3;
-    temperaturaV = 510;
-    conceoxiV = 21;
-    fonteV = 0.1;
-    umidadeV = 100;
-    concepoV = 85;
-  }
-
-  else if (tipoGrao == "Casca de arroz") {
-    pressaoV = 7.7;
-    temperaturaV = 450;
-    conceoxiV = 17;
-    fonteV = 0.05;
-    umidadeV = 100;
-    concepoV = 55;
-  }
-
-  else if (tipoGrao == "Semente de arroz(casca)") {
-    pressaoV = 4.3;
-    temperaturaV = 490;
-    conceoxiV = 12;
-    fonteV = 0.08;
-    umidadeV = 100;
-    concepoV = 45;
-  }
-
-  else if (tipoGrao == "Proteína de soja") {
-    pressaoV = 6.9;
-    temperaturaV = 540;
-    conceoxiV = 12;
-    fonteV = 0.06;
-    umidadeV = 100;
-    concepoV = 40;
-  }
-
-  else if (tipoGrao == "Farinha de soja") {
-    pressaoV = 6.6;
-    temperaturaV = 550;
-    conceoxiV = 15;
-    fonteV = 0.1;
-    umidadeV = 100;
-    concepoV = 60;
-  }
-
-  else if (tipoGrao == "Trigo bruto") {
-    pressaoV = 5;
-    temperaturaV = 500;
-    conceoxiV = 12;
-    fonteV = 0.06;
-    umidadeV = 100;
-    concepoV = 0.5;
-  }
-
-  else if (tipoGrao == "Farinha de trigo") {
-    pressaoV = 7;
-    temperaturaV = 440;
-    conceoxiV = 15;
-    fonteV = 0.06;
-    umidadeV = 100;
-    concepoV = 50;
-  }
-
-  else if (tipoGrao == "Trigo Cereal") {
-    pressaoV = 9.2;
-    temperaturaV = 430;
-    conceoxiV = 13;
-    fonteV = 0.035;
-    umidadeV = 100;
-    concepoV = 35;
-  }
-
-  else if (tipoGrao == "Palha de trigo") {
-    pressaoV = 8.2;
-    temperaturaV = 470;
-    conceoxiV = 13;
-    fonteV = 0.035;
-    umidadeV = 100;
-    concepoV = 75;
-  }
-
-  else if (tipoGrao == "Polvilho de trigo") {
-    pressaoV = 7;
-    temperaturaV = 430;
-    conceoxiV = 12;
-    fonteV = 0.025;
-    umidadeV = 100;
-    concepoV = 45;
-  }
-
-  else if (tipoGrao == "Milho") {
-    pressaoV = 8;
-    temperaturaV = 400;
-    conceoxiV = 13;
-    fonteV = 0.04;
-    umidadeV = 100;
-    concepoV = 55;
-  }
-
-  else if (tipoGrao == "Casca de milho cru") {
-    pressaoV = 8.7;
-    temperaturaV = 410;
-    conceoxiV = 17;
-    fonteV = 0.04;
-    umidadeV = 100;
-    concepoV = 40;
-  }
-
-  else if (tipoGrao == "Polvilho de milho") {
-    pressaoV = 10.2;
-    temperaturaV = 390;
-    conceoxiV = 11;
-    fonteV = 0.03;
-    umidadeV = 100;
-    concepoV = 40;
-  }
-
-  else if (tipoGrao == "Semente de milho") {
-    pressaoV = 8.9;
-    temperaturaV = 450;
-    conceoxiV = 12;
-    fonteV = 0.045;
-    umidadeV = 100;
-    concepoV = 45;
-    concepoV = 40;
-  }
-}
 void printSerialAmbiente() {
   Serial.print("========\nTemperatura: ");
   Serial.print(atualTemp, 0);
@@ -218,33 +64,22 @@ void setWebAmbiente(EthernetClient client) {
 void printWebAmbiente(EthernetClient client) {
   client.println("HTTP/1.1 200 OK");
   client.println("Content-Type: text/html");
-  client.println("Connection: close"); // the connection will be closed after
-  // completion of the response
-  // client.println("Refresh: 2");  // refresh the page automatically every 5
-  // sec
+  client.println("Connection: close");
   client.println();
   client.println("<!DOCTYPE HTML>");
   client.println("<html>");
-  // output the value of each analog input pin
   setWebAmbiente(client);
   client.println("</html>");
 }
 
 void printJsonAmbiente(EthernetClient client) {
-  StaticJsonDocument<260> doc;
+  StaticJsonDocument<138> doc;
   doc["pressao"] = atualPre;
-  doc["situPressao"] = atualUmi;
   doc["temperatura"] = atualTemp;
-  doc["situTemperatura"] = atualUmi;
   doc["conceOxi"] = atualOxi;
-  doc["situConceOxi"] = atualUmi;
   doc["fonteIg"] = atualIg;
-  doc["situFonteIg"] = atualUmi;
   doc["umidade"] = atualUmi;
-  doc["situUmidade"] = atualUmi;
   doc["concePo"] = atualPoeira;
-  doc["situConcePo"] = atualUmi;
-  doc["situaSilo"] = atualUmi;
   client.println(F("HTTP/1.0 200 OK"));
   client.println(F("Access-Control-Allow-Origin: *"));
   client.println(F("Content-Type: application/json"));
@@ -286,9 +121,7 @@ void resourceWebServer(EthernetClient client, String req) {
 void webService() {
   EthernetClient client = server.available();
   if (client) {
-    client.setConnectionTimeout(TIMEOUT); // set the timeout duration for
-    // client.connect() and client.stop()
-    Serial.println();
+    client.setConnectionTimeout(TIMEOUT);
     Serial.print("[HOST]: ");
     Serial.println(client.remoteIP());
     // an http request ends with a blank line
@@ -309,6 +142,7 @@ void webService() {
     // close the connection:
     client.stop();
     Serial.println("client disconnected");
+    Serial.println();
   }
 }
 
@@ -327,6 +161,7 @@ void setup() {
     if (Ethernet.begin(mac) != 0) {
       DHCP = true;
     }
+    Ethernet.maintain();
   }
   // start the WebServer
   Serial.print("server is at ");
@@ -337,9 +172,6 @@ void setup() {
 }
 
 void loop() {
-  // webService();
-  // put your main code here, to run repeatedly:
-
   unsigned long currentMillisWebService = millis();
   if (currentMillisWebService - antWebServiceMillis > MILLS_WEBSERVICE) {
     antWebServiceMillis = currentMillisWebService;
@@ -350,6 +182,5 @@ void loop() {
   if (currentMillisAmbiente - antAmbienteMillis > MILLS_AMBIENTE) {
     antAmbienteMillis = currentMillisAmbiente;
     setAmbienteSimulado();
-    // printSerialAmbiente();
   }
 }
