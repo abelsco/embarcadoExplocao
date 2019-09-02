@@ -124,24 +124,20 @@ void webService() {
     client.setConnectionTimeout(TIMEOUT);
     Serial.print("[HOST]: ");
     Serial.println(client.remoteIP());
-    // an http request ends with a blank line
-    boolean currentLineIsBlank = true;
     client.connected();
     if (client.available()) {
-      String req = client.readStringUntil('\r');
-      // String req = client.readString();
+      String Header = client.readString();
+      String req = Header.substring(0, Header.indexOf('\r'));
+      Serial.println(Header);
       Serial.print("[HTTP-REQUEST]: ");
       Serial.println(req);
-      // client.flush();
-      // Serial.println(req);
-      // Serial.println(req2);
       resourceWebServer(client, req);
     }
     // give the web browser time to receive the data
     delay(1);
     // close the connection:
     client.stop();
-    Serial.println("client disconnected");
+    Serial.println("cliente disconectado");
     Serial.println();
   }
 }
@@ -164,7 +160,7 @@ void setup() {
     Ethernet.maintain();
   }
   // start the WebServer
-  Serial.print("server is at ");
+  Serial.print("Arduino está no IP: ");
   Serial.println(Ethernet.localIP());
   server.begin();
   Serial.println("==========================================================="
