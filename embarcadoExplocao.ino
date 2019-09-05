@@ -25,51 +25,47 @@ float atualIg = 0;
 long antAmbienteMillis = 0;
 long antWebServiceMillis = 0;
 bool DHCP = false;
+bool CONSUMIR = false;
 
 byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
 EthernetServer server(3000);
+String LOG = "";
 
-void printSerialAmbiente() {
-  Serial.print("========\nTemperatura: ");
-  Serial.print(atualTemp, 0);
-  Serial.print("ºC\nUmidade: ");
-  Serial.print(atualUmi, 0);
-  Serial.print(" %\nPresão: ");
-  Serial.print(atualPre);
-  Serial.print(" kg/cm²\nConcentração Pó: ");
-  Serial.print(atualPoeira);
-  Serial.print(" g/m³\nConcentração Oxigênio: ");
-  Serial.print(atualOxi, 0);
-  Serial.print(" %\nEnergia Ignição: ");
-  Serial.print(atualIg);
-  Serial.println(" J");
+String toString(const IPAddress &address) {
+  return String() + address[0] + "." + address[1] + "." + address[2] + "." +
+         address[3];
 }
 
-void setWebAmbiente(EthernetClient client) {
-  client.print("========<br />Temperatura: ");
-  client.print(atualTemp, 0);
-  client.print("ºC<br />Umidade: ");
-  client.print(atualUmi, 0);
-  client.print(" %<br />Presão: ");
-  client.print(atualPre);
-  client.print(" kg/cm²<br />Concentração Pó: ");
-  client.print(atualPoeira);
-  client.print(" g/m³<br />Concentração Oxigênio: ");
-  client.print(atualOxi, 0);
-  client.print(" %<br />Energia Ignição: ");
-  client.print(atualIg);
-  client.println(" J<br />");
+void setLOG(String client, String Header) {
+  LOG = "\n\n[CLIENTE]: ";
+  LOG.concat(client + "\n{\n");
+  LOG.concat(Header);
+  LOG.concat("\n[SENSORES]: {");
+  LOG.concat("\n-pressao: " + String(atualPre));
+  LOG.concat("\n-temperatura: " + String(atualTemp));
+  LOG.concat("\n-conceOxi: " + String(atualOxi));
+  LOG.concat("\n-fonteIg: " + String(atualIg));
+  LOG.concat("\n-umidade: " + String(atualUmi));
+  LOG.concat("\n-concePo: " + String(atualPoeira));
+  LOG.concat("\n}\n}\n");
 }
 
-void printWebAmbiente(EthernetClient client) {
-  client.println("HTTP/1.1 200 OK");
-  client.println("Content-Type: text/html");
-  client.println("Connection: close");
-  client.println();
-  client.println("<!DOCTYPE HTML>");
-  client.println("<html>");
-  setWebAmbiente(client);
-  client.println("</html>");
+void gravaMicroSD() { Serial.print(LOG); }
+
+void setAmbienteSimulado() {
+  atualTemp = analogRead(A5);
+  atualUmi = analogRead(A4);
+  atualPre = analogRead(A3);
+  atualPoeira = analogRead(A2);
+  atualOxi = analogRead(A1);
+  atualIg = analogRead(A0);
+
+  atualTemp = map(atualTemp, 0, 1023, 0, 800);
+  atualUmi = map(atualUmi, 0, 409, 0, 100);
+  atualPre = atualPre * 20 / 1023;
+  atualPoeira = atualPoeira * 100 / 1023;
+  atualOxi = map(atualOxi, 0, 409, 0, 100);
+  atualIg = atualIg * 2 / 1023;
 }
 
 void printJsonAmbiente(EthernetClient client) {
@@ -92,53 +88,49 @@ void printJsonAmbiente(EthernetClient client) {
   serializeJson(doc, client);
 }
 
-void setAmbienteSimulado() {
-  atualTemp = analogRead(A5);
-  atualUmi = analogRead(A4);
-  atualPre = analogRead(A3);
-  atualPoeira = analogRead(A2);
-  atualOxi = analogRead(A1);
-  atualIg = analogRead(A0);
-
-  atualTemp = map(atualTemp, 0, 1023, 0, 800);
-  atualUmi = map(atualUmi, 0, 409, 0, 100);
-  atualPre = atualPre * 20 / 1023;
-  atualPoeira = atualPoeira * 100 / 1023;
-  atualOxi = map(atualOxi, 0, 409, 0, 100);
-  atualIg = atualIg * 2 / 1023;
-}
-
 void resourceWebServer(EthernetClient client, String req) {
   if (req == "GET /api/ambiente/ HTTP/1.1") {
     printJsonAmbiente(client);
   } else if (req == "GET /api/ambiente/? HTTP/1.1") {
     printJsonAmbiente(client);
   } else {
-    printSerialAmbiente();
+    LOG = "";
   }
 }
 
 void webService() {
+  CONSUMIR = false;
+  String Header = "";
+  String req = "";
+  String ip = "";
   EthernetClient client = server.available();
   if (client) {
     client.setConnectionTimeout(TIMEOUT);
-    Serial.print("[HOST]: ");
-    Serial.println(client.remoteIP());
+    Serial.print("[CLIENTE]: ");
+    ip = toString(client.remoteIP());
+    Serial.println(ip);
     client.connected();
     if (client.available()) {
-      String Header = client.readString();
-      String req = Header.substring(0, Header.indexOf('\r'));
-      Serial.println(Header);
+      Header = client.readString();
+
+      req = Header.substring(0, Header.indexOf('\r'));
+      // Serial.println(Header);
       Serial.print("[HTTP-REQUEST]: ");
       Serial.println(req);
       resourceWebServer(client, req);
+      CONSUMIR = true;
     }
     // give the web browser time to receive the data
     delay(1);
     // close the connection:
     client.stop();
-    Serial.println("cliente disconectado");
-    Serial.println();
+    client.flush();
+    Serial.println("CONCLUÍDO\n");
+    server.flush();
+    if (CONSUMIR) {
+      setLOG(ip, Header);
+      gravaMicroSD();
+    }
   }
 }
 
@@ -148,13 +140,13 @@ void setup() {
   // You can use Ethernet.init(pin) to configure the CS pin
   Ethernet.init(10); // Most Arduino shields
 
-  Serial.println(
-      "=====================================================================");
+  Serial.println("==========================================================="
+                 "==========");
   Serial.println("Ethernet WebServer");
 
   // start the Ethernet connection and the server:
   while (!DHCP) {
-    if (Ethernet.begin(mac) != 0) {
+    if (Ethernet.begin(mac) == 1) {
       DHCP = true;
     }
     Ethernet.maintain();
