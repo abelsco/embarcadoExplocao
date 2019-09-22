@@ -3,8 +3,12 @@
 #include <SPI.h>
 
 #define TIMEOUT 1000
-#define MILLS_AMBIENTE 3
-#define MILLS_WEBSERVICE 45
+#define MILLS_AMBIENTE 30
+#define MILLS_WEBSERVICE 1000
+#define CODSERIE                                                               \
+  "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d" // Identificação
+                                                                     // do
+                                                                     // Arduino(SHA256)
 
 /* PINOS (FAIXA-OPERACAO)[INTERVALO]
    A5 = TEMPERATURA (0 - 800)[0 - 1023]
@@ -15,44 +19,25 @@
    A0 = IGNICAO (0 - 2)
 */
 
-float atualTemp = 0;
-float atualUmi = 0;
-float atualPre = 0;
-float atualPoeira = 0;
-float atualOxi = 0;
-float atualIg = 0;
+float atualTemp = 0;   // Temperatura atual
+float atualUmi = 0;    // Umidade atual
+float atualPre = 0;    // Pressão atual
+float atualPoeira = 0; // Concentração de poeira atual
+float atualOxi = 0;    // Concentração de oxigênio atual
+float atualIg = 0;     // Concentração da energia de ignição
 
-long antAmbienteMillis = 0;
-long antWebServiceMillis = 0;
-bool DHCP = false;
-bool CONSUMIR = false;
+long antAmbienteMillis = 0;  // Timer corrente do ambiente
+long antWebClientMillis = 0; // Timer corrente do WebCliente
+bool DHCP = false;           // Controla a aquisição do DHCP
 
-byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-EthernetServer server(3000);
-String LOG = "";
-
-String toString(const IPAddress &address) {
-  return String() + address[0] + "." + address[1] + "." + address[2] + "." +
-         address[3];
-}
-
-void setLOG(String client, String Header) {
-  LOG = "\n\n[CLIENTE]: ";
-  LOG.concat(client + "\n{\n");
-  LOG.concat(Header);
-  LOG.concat("\n[SENSORES]: {");
-  LOG.concat("\n-pressao: " + String(atualPre));
-  LOG.concat("\n-temperatura: " + String(atualTemp));
-  LOG.concat("\n-conceOxi: " + String(atualOxi));
-  LOG.concat("\n-fonteIg: " + String(atualIg));
-  LOG.concat("\n-umidade: " + String(atualUmi));
-  LOG.concat("\n-concePo: " + String(atualPoeira));
-  LOG.concat("\n}\n}\n");
-}
-
-void gravaMicroSD() { Serial.print(LOG); }
+byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // Endereço físico do Arduino
+// Para o servidor, utilizar uma das duas definições abaixo
+IPAddress servidor(192, 168, 16, 4); // IP da API
+// char servidor[] = "www.meu-servidor.com";    // Endereço DNS da API
+EthernetClient client; // Cliente HTTP
 
 void setAmbienteSimulado() {
+  // Atualiza os valores dos sensores
   atualTemp = analogRead(A5);
   atualUmi = analogRead(A4);
   atualPre = analogRead(A3);
@@ -68,102 +53,82 @@ void setAmbienteSimulado() {
   atualIg = atualIg * 2 / 1023;
 }
 
-void printJsonAmbiente(EthernetClient client) {
-  StaticJsonDocument<138> doc;
+void printJsonAmbiente() {
+  // Envia os dados para a API consumir
+  StaticJsonDocument<250> doc;
   doc["pressao"] = atualPre;
   doc["temperatura"] = atualTemp;
   doc["conceOxi"] = atualOxi;
   doc["fonteIg"] = atualIg;
   doc["umidade"] = atualUmi;
   doc["concePo"] = atualPoeira;
-  client.println(F("HTTP/1.0 200 OK"));
-  client.println(F("Access-Control-Allow-Origin: *"));
+  doc["codSerie"] = CODSERIE;
+  client.println(F("POST /api/ambiente HTTP/1.1"));
+  client.println(F("Host: 192.168.16.4:5001"));
   client.println(F("Content-Type: application/json"));
+  client.println(F("User-Agent: arduino-ethernet"));
+  client.println(F("Accept: */*"));
   client.println(F("Accept-Encoding: gzip, deflate"));
-  client.println(F("Connection: close"));
+  client.println(F("Connection: keep-alive"));
   client.print(F("Content-Length: "));
   client.println(measureJsonPretty(doc));
   client.println();
-  // serializeJsonPretty(doc, Serial);
-  serializeJson(doc, client);
+  delay(1);
+  serializeJsonPretty(doc, client);
 }
 
-void resourceWebServer(EthernetClient client, String req) {
-  if (req == "GET /api/ambiente/ HTTP/1.1") {
-    printJsonAmbiente(client);
-  } else if (req == "GET /api/ambiente/? HTTP/1.1") {
-    printJsonAmbiente(client);
-  } else {
-    LOG = "";
+void printResposta() {
+  StaticJsonDocument<30> doc;
+  if (client.available()) {
+    // char c = client.read();
+    // Serial.print(c);
+    deserializeJson(doc, client);
+    serializeJsonPretty(doc, Serial);
   }
 }
 
-void webService() {
-  CONSUMIR = false;
-  String Header = "";
-  String req = "";
-  String ip = "";
-  EthernetClient client = server.available();
-  if (client) {
-    client.setConnectionTimeout(TIMEOUT);
-    Serial.print("[CLIENTE]: ");
-    ip = toString(client.remoteIP());
-    Serial.println(ip);
-    client.connected();
-    if (client.available()) {
-      Header = client.readString();
-
-      req = Header.substring(0, Header.indexOf('\r'));
-      // Serial.println(Header);
-      Serial.print("[HTTP-REQUEST]: ");
-      Serial.println(req);
-      resourceWebServer(client, req);
-      CONSUMIR = true;
-    }
-    // give the web browser time to receive the data
+void webClient() {
+  // Implementa o WebCliente verificando se consegue se conectar no servidor
+  client.stop();
+  if (client.connect(servidor, 5001)) {
+    printJsonAmbiente();
+    // Espera um tempo
     delay(1);
-    // close the connection:
-    client.stop();
-    client.flush();
-    Serial.println("CONCLUÍDO\n");
-    server.flush();
-    if (CONSUMIR) {
-      setLOG(ip, Header);
-      gravaMicroSD();
-    }
   }
+  client.stop();
+  client.flush();
 }
 
 void setup() {
-  // put your setup code here, to run once:
+  // Inicia a Serial
   Serial.begin(57600);
-  // You can use Ethernet.init(pin) to configure the CS pin
-  Ethernet.init(10); // Most Arduino shields
 
-  Serial.println("==========================================================="
-                 "==========");
-  Serial.println("Ethernet WebServer");
+  Serial.println("===========================================================");
+  Serial.println("Ethernet WebClient");
 
-  // start the Ethernet connection and the server:
+  // Tenta se registrar na rede através do DHPC:
   while (!DHCP) {
     if (Ethernet.begin(mac) == 1) {
       DHCP = true;
     }
     Ethernet.maintain();
   }
-  // start the WebServer
+  // Delay para inicialização do shield
+  delay(1000);
+  // Registra o IP na Serial
   Serial.print("Arduino está no IP: ");
   Serial.println(Ethernet.localIP());
-  server.begin();
-  Serial.println("==========================================================="
-                 "==========\n");
+  Serial.println(
+      "===========================================================\n");
 }
 
 void loop() {
-  unsigned long currentMillisWebService = millis();
-  if (currentMillisWebService - antWebServiceMillis > MILLS_WEBSERVICE) {
-    antWebServiceMillis = currentMillisWebService;
-    webService();
+  // Caso queira visualizar a resposta
+  // printResposta();
+  unsigned long currentMillisWebClient = millis();
+  if (currentMillisWebClient - antWebClientMillis > MILLS_WEBSERVICE) {
+    antWebClientMillis = currentMillisWebClient;
+    webClient();
   }
 
   unsigned long currentMillisAmbiente = millis();
