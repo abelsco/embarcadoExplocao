@@ -95,31 +95,31 @@ void webClient() {
     // Espera um tempo
     delay(1);
   }
-  client.stop();
-  client.flush();
 }
 
 void setup() {
   // Inicia a Serial
   Serial.begin(57600);
-
   Serial.println("===========================================================");
-  Serial.println("Ethernet WebClient");
-
-  // Tenta se registrar na rede através do DHPC:
-  while (!DHCP) {
-    if (Ethernet.begin(mac) == 1) {
-      DHCP = true;
+  Serial.println("WebClient Arduino");
+  Serial.println("Iniciando DHCP:");
+  while (Ethernet.begin(mac) == 0) {
+    Serial.println("Não foi possível registrar DHCP");
+    // Check for Ethernet hardware present
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+      Serial.println("Shield de rede não encontrado");
+      while (true) {
+        delay(1); // do nothing, no point running without Ethernet hardware
+      }
     }
-    Ethernet.maintain();
   }
-  // Delay para inicialização do shield
-  delay(1000);
-  // Registra o IP na Serial
-  Serial.print("Arduino está no IP: ");
+
+  Serial.print("IP registrado: ");
   Serial.println(Ethernet.localIP());
   Serial.println(
       "===========================================================\n");
+  // Delay para o Shield iniciar:
+  delay(1000);
 }
 
 void loop() {
