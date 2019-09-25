@@ -103,7 +103,7 @@ void setup() {
   Serial.println("===========================================================");
   Serial.println("WebClient Arduino");
   Serial.println("Iniciando DHCP:");
-  while (Ethernet.begin(mac) == 0) {
+  if (Ethernet.begin(mac) == 0) {
     Serial.println("Não foi possível registrar DHCP");
     // Check for Ethernet hardware present
     if (Ethernet.hardwareStatus() == EthernetNoHardware) {
