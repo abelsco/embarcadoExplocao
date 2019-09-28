@@ -16,7 +16,7 @@
    A3 = PRESSÃO (0 - 20)
    A2 = POEIRA (0 - 100)
    A1 = OXIGÊNIO (0 - 100)
-   A0 = IGNICAO (0 - 2)
+   A0 = GAS (0 - 100)
 */
 
 float atualTemp = 0;   // Temperatura atual
@@ -24,7 +24,7 @@ float atualUmi = 0;    // Umidade atual
 float atualPre = 0;    // Pressão atual
 float atualPoeira = 0; // Concentração de poeira atual
 float atualOxi = 0;    // Concentração de oxigênio atual
-float atualIg = 0;     // Concentração da energia de ignição
+float atualGas = 0;    // Concentração de H2S
 
 long antAmbienteMillis = 0;  // Timer corrente do ambiente
 long antWebClientMillis = 0; // Timer corrente do WebCliente
@@ -43,14 +43,15 @@ void setAmbienteSimulado() {
   atualPre = analogRead(A3);
   atualPoeira = analogRead(A2);
   atualOxi = analogRead(A1);
-  atualIg = analogRead(A0);
+  atualGas = analogRead(A0);
 
   atualTemp = map(atualTemp, 0, 1023, 0, 800);
   atualUmi = map(atualUmi, 0, 409, 0, 100);
   atualPre = atualPre * 20 / 1023;
   atualPoeira = atualPoeira * 100 / 1023;
   atualOxi = map(atualOxi, 0, 409, 0, 100);
-  atualIg = atualIg * 2 / 1023;
+  atualGas = map(atualGas, 0, 409, 0, 100);
+  atualGas = (atualGas / 100) * 4.3;
 }
 
 void printJsonAmbiente() {
@@ -59,7 +60,7 @@ void printJsonAmbiente() {
   doc["pressao"] = atualPre;
   doc["temperatura"] = atualTemp;
   doc["conceOxi"] = atualOxi;
-  doc["fonteIg"] = atualIg;
+  doc["conceGas"] = atualGas;
   doc["umidade"] = atualUmi;
   doc["concePo"] = atualPoeira;
   doc["codSerie"] = CODSERIE;
@@ -105,12 +106,8 @@ void setup() {
   Serial.println("Iniciando DHCP:");
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Não foi possível registrar DHCP");
-    // Check for Ethernet hardware present
-    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
-      Serial.println("Shield de rede não encontrado");
-      while (true) {
-        delay(1); // do nothing, no point running without Ethernet hardware
-      }
+    while (true) {
+      delay(1);
     }
   }
 
