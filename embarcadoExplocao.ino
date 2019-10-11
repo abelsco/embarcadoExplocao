@@ -6,9 +6,9 @@
 #define MILLS_AMBIENTE 30
 #define MILLS_WEBSERVICE 1000
 #define CODSERIE                                                               \
-  "3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d" // Identificação
+  "6edcf3ed1ef5632429a51f941d42ccfd1d3407671a2ac939eb5361a0f576ff8f" // Identificação
                                                                      // do
-                                                                     // Arduino(SHA256)
+                                                                     // Arduino(SHA512-256)
 
 /* PINOS (FAIXA-OPERACAO)[INTERVALO]
    A5 = TEMPERATURA (0 - 800)[0 - 1023]
