@@ -4,7 +4,7 @@
 
 #define TIMEOUT 1000
 #define MILLS_AMBIENTE 30
-#define MILLS_WEBSERVICE 1000
+#define MILLS_WEBSERVICE 10000
 #define CODSERIE                                                               \
   "6edcf3ed1ef5632429a51f941d42ccfd1d3407671a2ac939eb5361a0f576ff8f" // Identificação
                                                                      // do
