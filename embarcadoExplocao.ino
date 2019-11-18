@@ -11,7 +11,7 @@
                                                                      // Arduino(SHA512-256)
 
 /* PINOS (FAIXA-OPERACAO)[INTERVALO]
-   A5 = TEMPERATURA (0 - 800)[0 - 1023]
+   A5 = TEMPERATURA (0 - 70)[0 - 1023]
    A4 = UMIDADE (0 - 100)[0-100]
    A3 = PRESSÃO (0 - 20)
    A2 = POEIRA (0 - 100)
@@ -45,7 +45,7 @@ void setAmbienteSimulado() {
   atualOxi = analogRead(A1);
   atualGas = analogRead(A0);
 
-  atualTemp = map(atualTemp, 0, 1023, 0, 800);
+  atualTemp = map(atualTemp, 0, 1023, 0, 70);
   atualUmi = map(atualUmi, 0, 409, 0, 100);
   atualPre = atualPre * 20 / 1023;
   atualPoeira = atualPoeira * 100 / 1023;
