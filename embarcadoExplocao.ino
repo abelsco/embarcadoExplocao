@@ -90,11 +90,11 @@ void printResposta() {
 
 void webClient() {
   // Implementa o WebCliente verificando se consegue se conectar no servidor
-  client.stop();
   if (client.connect(servidor, 5001)) {
     printJsonAmbiente();
     // Espera um tempo
     delay(1);
+    client.stop();
   }
 }
 
