@@ -30,7 +30,7 @@ long antAmbienteMillis = 0;  // Timer corrente do ambiente
 long antWebClientMillis = 0; // Timer corrente do WebCliente
 bool DHCP = false;           // Controla a aquisição do DHCP
 
-byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // Endereço físico do Arduino
+byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEE}; // Endereço físico do Arduino
 // Para o servidor, utilizar uma das duas definições abaixo
 IPAddress servidor(192, 168, 16, 4); // IP da API
 // char servidor[] = "www.meu-servidor.com";    // Endereço DNS da API
@@ -44,7 +44,8 @@ void setAmbienteSimulado() {
   atualPoeira = analogRead(A2);
   atualOxi = analogRead(A1);
   atualGas = analogRead(A0);
-
+  
+  // Mapeia o ambiente respeitando as faixas de operacao 
   atualTemp = map(atualTemp, 0, 1023, 0, 70);
   atualUmi = map(atualUmi, 0, 409, 0, 100);
   atualPre = atualPre * 20 / 1023;
